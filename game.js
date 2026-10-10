@@ -19,6 +19,9 @@ const startSize = 60;
 const startObjects = 30;
 const gameOverFreeze = 2;
 
+const jumpDuration = .5;
+const jumpSpeed = 300;
+
 let walnutTile;
 let gameOverTime = 0;
 
@@ -44,7 +47,9 @@ function resetGame()
         pos: vec2(w / 2, h / 2),
         size: startSize,
         speed: vec2(),
-        angle: 0
+        angle: 0,
+        jumpTimer: 0,
+        jumpDir: vec2()
     };
     city = vec2(0, 0);
     pointer = { down: false, origin: vec2(), moved: 0, startTime: 0 };
@@ -113,8 +118,16 @@ function gameUpdate()
     walnut.speed = walnut.speed.add(moveVec).scale(.92);
     if ((keyWasPressed('Space') || tap) && damage > 0) {
         damage -= 1;
-        walnut.speed = walnut.speed.add(walnut.speed.normalize().scale(25));
-        moveVec = moveVec.add(walnut.speed.normalize().scale(50));
+        // Jump in the input direction, or the current roll direction if idle
+        walnut.jumpDir = input.length() > .05 ? input.normalize() : walnut.speed.normalize();
+        walnut.jumpTimer = jumpDuration;
+        walnut.speed = walnut.speed.add(walnut.jumpDir.scale(25));
+    }
+    // Smoothly ease the jump out over its duration instead of a single-frame lurch
+    if (walnut.jumpTimer > 0) {
+        walnut.jumpTimer = max(0, walnut.jumpTimer - timeDelta);
+        const ease = (walnut.jumpTimer / jumpDuration) ** 2;
+        moveVec = moveVec.add(walnut.jumpDir.scale(jumpSpeed * ease * timeDelta));
     }
     walnut.angle += walnut.speed.length() * (walnut.speed.x > 0 ? .003 : -.003);
     moveVec = moveVec.add(bounce.scale(-0.5));
@@ -224,7 +237,10 @@ function gameRender()
         }
     }
 
-    drawTile(walnut.pos, vec2(walnut.size, walnut.size), walnutTile, WHITE, walnut.angle);
+    // Squash and stretch the walnut through the jump for a fluid feel
+    const jumpProgress = walnut.jumpTimer > 0 ? 1 - walnut.jumpTimer / jumpDuration : 0;
+    const jumpScale = 1 + Math.sin(jumpProgress * PI) * 0.18;
+    drawTile(walnut.pos, vec2(walnut.size, walnut.size).scale(jumpScale), walnutTile, WHITE, walnut.angle);
 
     drawTextScreen("Was de Walnuss?!", vec2(mainCanvasSize.x / 2, 40), 40 - timer.get()*4, WHITE, 6);
     drawTextScreen("" + score
