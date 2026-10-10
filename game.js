@@ -1,10 +1,13 @@
 'use strict';
 const walnutColor = hsl(.08, .7, .45);
 const bernRed = hsl(.02, .85, .45);
-const bernYellow = hsl(.15, .9, .55);
+const bernYellow = rgb(255/255, 229/255, 0);
 const bernGreen = hsl(.35, .7, .35);
-const rColor = hsl(0, 1, 0.5);
-const lColor = hsl(0, 0.9, 0.5);
+const bernWhite = rgb(1, 1, 1);
+const bernBlue = hsl(.15, .7, .5);
+
+const rColor = bernWhite; //hsl(0, 1, 0.5);
+const lColor = bernYellow; //hsl(0, 0.9, 0.5);
 
 let walnut, city, score, damage, objects, timer;
 let bounce = vec2();
@@ -128,9 +131,11 @@ function gameUpdate()
         walnut.jumpTimer = max(0, walnut.jumpTimer - timeDelta);
         const ease = (walnut.jumpTimer / jumpDuration) ** 2;
         moveVec = moveVec.add(walnut.jumpDir.scale(jumpSpeed * ease * timeDelta));
+    } else {
+      // Bounce the walnut from walls when not jumping
+      moveVec = moveVec.add(bounce.scale(-0.5));
     }
     walnut.angle += walnut.speed.length() * (walnut.speed.x > 0 ? .003 : -.003);
-    moveVec = moveVec.add(bounce.scale(-0.5));
 
     // Move all objects opposite to input so ball stays centered
     city = city.subtract(moveVec);
@@ -227,7 +232,7 @@ function gameRender()
     for (const obj of objects)
     {
         if (obj.collected) continue;
-        const color = obj.type == 1 ? rColor : obj.type == 2 ? hsl(.15, .7, .5) : hsl(.55, .6, .5);
+        const color = obj.type == 1 ? bernRed : obj.type == 2 ? bernBlue : bernGreen;
         const r = 20 + obj.type * 15;
         drawCircle(obj.pos, r, color);
         if (obj.type > 1)
