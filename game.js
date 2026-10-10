@@ -9,6 +9,8 @@ const bernBlue = hsl(.15, .7, .5);
 const rColor = bernWhite; //hsl(0, 1, 0.5);
 const lColor = bernYellow; //hsl(0, 0.9, 0.5);
 
+const backgroundColor = hsl(.13, .9, .15);
+
 let walnut, city, score, damage, objects, timer;
 let bounce = vec2();
 let pointer;
@@ -30,6 +32,7 @@ let gameOverTime = 0;
 
 async function gameInit()
 {
+    setCanvasClearColor(backgroundColor);
     walnutTile = loadSprite('walnut.png');
     await spritesReady();
     resetGame();
