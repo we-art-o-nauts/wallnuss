@@ -9,6 +9,10 @@ Programmiert in [LittleJS](https://littlejsengine.com/) mit unterstützung von:
 - [Apertus](https://apertus-ai.org) und [Inkling](https://thinkingmachines.ai/news/introducing-inkling/)
 - [Zed](https://zed.dev/) und [GIMP](https://www.gimp.org/)
 
+Screenshot:
+
+![](screenshot.png)
+
 ---
 
 ## Konzept
