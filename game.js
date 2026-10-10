@@ -103,7 +103,10 @@ function gameUpdate()
     if (mouseIsDown(0) && pointer.down) {
         const drag = mousePosScreen.subtract(pointer.origin);
         const len = drag.length();
-        if (len > 0) input = input.add(drag.scale(min(len, pointerMaxRadius) / pointerMaxRadius / len));
+        if (len > 0) {
+            const dragInput = drag.scale(min(len, pointerMaxRadius) / pointerMaxRadius / len);
+            input = input.add(vec2(dragInput.x, -dragInput.y));
+        }
     }
     if (input.length() > 1) input = input.normalize();
     let moveVec = input.scale(4 + (damage * 0.5));
