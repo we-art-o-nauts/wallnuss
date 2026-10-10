@@ -19,7 +19,7 @@ const pointerMaxRadius = 120;
 const pointerTapDistance = 20;
 const pointerTapTime = .35;
 
-const startTime = 10;
+const startTime = 12;
 const startSize = 60;
 const startObjects = 30;
 const gameOverFreeze = 2;
@@ -29,10 +29,19 @@ const jumpSpeed = 300;
 
 let walnutTile;
 let gameOverTime = 0;
+let screenZoom = 1;
 
 async function gameInit()
 {
+    setShowSplashScreen(true);
     setCanvasClearColor(backgroundColor);
+    screenZoom = 2; //isTouchDevice ? 2 : 1;
+    if (screenZoom !== 1)
+    {
+        const zoomedSize = mainCanvasSize.scale(1 / screenZoom);
+        setCanvasFixedSize(zoomedSize);
+        mainCanvasSize = zoomedSize.copy();
+    }
     walnutTile = loadSprite('walnut.png');
     await spritesReady();
     resetGame();
@@ -41,7 +50,7 @@ async function gameInit()
 function resetGame()
 {
     score = 0;
-    damage = 1;
+    damage = 3;
     timer = new Timer(startTime);
     gameOverTime = 0;
     bounce = vec2();
@@ -179,6 +188,9 @@ function gameUpdate()
             damage += 1;
           }
 
+          if (damage > 3) {
+            damage = 3;
+          }
           if (walnut.size < 200) {
             walnut.size += obj.type * 3;
           }
@@ -255,14 +267,14 @@ function gameRender()
       //+ "  •  SIZE " + (walnut.size - 59)
       + "  •  ⏱ " + round(-1 * timer.get())
       + "  •  PWR " + '★'.repeat(damage)
-      , vec2(mainCanvasSize.x / 2, mainCanvasSize.y - 40), 20, WHITE, 3);
+      , vec2(mainCanvasSize.x / 2, mainCanvasSize.y - 40), 30, WHITE, 3);
 
-    if (timer.elapsed() || !timer.active())
+    if (timer.elapsed() || !timer.active() || timer.get() > -1)
     {
         //drawRect(vec2(0, 0), mainCanvasSize, hsl(0, 0, 0, .6));
-        drawTextScreen("Game is over, Walnuss", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 - 70), 40, bernYellow, 8);
+        message = score < 50 ? "Tiny seed, keep rolling" : (score < 100 ? "You grew stronger" : "Well done, Walnuss");
+        drawTextScreen(message, vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 - 70), 40, bernYellow, 8);
         drawTextScreen("" + score + " points", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2), 58, WHITE, 4);
-        drawTextScreen((score < 50 ? "You are a tiny seed, keep rolling" : (score < 100 ? "You grew stronger" : "Well done, master")), vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 60), 22, bernYellow, 3);
 
         const frozen = time - gameOverTime < gameOverFreeze;
         if (frozen)
