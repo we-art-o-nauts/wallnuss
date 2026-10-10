@@ -6,7 +6,7 @@ const bernGreen = hsl(.35, .7, .35);
 const bernWhite = rgb(1, 1, 1);
 const bernBlue = hsl(.15, .7, .5);
 
-const rColor = bernWhite; //hsl(0, 1, 0.5);
+const rColor = bernRed; //hsl(0, 1, 0.5);
 const lColor = bernYellow; //hsl(0, 0.9, 0.5);
 
 const backgroundColor = hsl(.13, .9, .15);
@@ -19,12 +19,12 @@ const pointerMaxRadius = 120;
 const pointerTapDistance = 20;
 const pointerTapTime = .35;
 
-const startTime = 12;
+const startTime = 10;
 const startSize = 60;
 const startObjects = 30;
 const gameOverFreeze = 2;
 
-const jumpDuration = .5;
+const jumpDuration = .8;
 const jumpSpeed = 300;
 
 let walnutTile;
@@ -35,7 +35,7 @@ async function gameInit()
 {
     setShowSplashScreen(true);
     setCanvasClearColor(backgroundColor);
-    screenZoom = 2; //isTouchDevice ? 2 : 1;
+    screenZoom = isTouchDevice ? 2 : 1;
     if (screenZoom !== 1)
     {
         const zoomedSize = mainCanvasSize.scale(1 / screenZoom);
@@ -259,36 +259,37 @@ function gameRender()
 
     // Squash and stretch the walnut through the jump for a fluid feel
     const jumpProgress = walnut.jumpTimer > 0 ? 1 - walnut.jumpTimer / jumpDuration : 0;
-    const jumpScale = 1 + Math.sin(jumpProgress * PI) * 0.18;
+    const jumpScale = 1 + Math.sin(jumpProgress * PI) * 0.3;
     drawTile(walnut.pos, vec2(walnut.size, walnut.size).scale(jumpScale), walnutTile, WHITE, walnut.angle);
 
-    drawTextScreen("Was de Walnuss?!", vec2(mainCanvasSize.x / 2, 40), 40 - timer.get()*4, WHITE, 6);
+    drawTextScreen("Was de Walnuss?!", vec2(mainCanvasSize.x / 2, 40), 40 - timer.get()*8, WHITE, 6);
     drawTextScreen("" + score
       //+ "  •  SIZE " + (walnut.size - 59)
-      + "  •  ⏱ " + round(-1 * timer.get())
+      + "  •  ⏱ " + max(0, round(-1 * timer.get()))
       + "  •  PWR " + '★'.repeat(damage)
       , vec2(mainCanvasSize.x / 2, mainCanvasSize.y - 40), 30, WHITE, 3);
 
-    if (timer.elapsed() || !timer.active() || timer.get() > -1)
+    if (timer.elapsed() || !timer.active())
     {
         //drawRect(vec2(0, 0), mainCanvasSize, hsl(0, 0, 0, .6));
-        message = score < 50 ? "Tiny seed, keep rolling" : (score < 100 ? "You grew stronger" : "Well done, Walnuss");
+        const message = score < 50 ? "Tiny seed, keep rolling" : (score < 100 ? "You grew stronger" : "Well done, Walnuss");
         drawTextScreen(message, vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 - 70), 40, bernYellow, 8);
         drawTextScreen("" + score + " points", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2), 58, WHITE, 4);
 
         const frozen = time - gameOverTime < gameOverFreeze;
         if (frozen)
         {
-            const countdown = Math.ceil(gameOverFreeze - (time - gameOverTime));
-            drawTextScreen("Get ready... " + countdown, vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 120), 16, WHITE, 3);
+            const ctimer = Math.ceil(gameOverFreeze - (time - gameOverTime));
+            const countdown = ctimer > 1 ? "Get ready ..." : "Steady ..";
+            drawTextScreen(countdown, vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 120), 30, WHITE, 3);
         }
         else
         {
             drawTextScreen("ENTER or TAP to try again", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 120), 16, WHITE, 3);
+            drawTextScreen("Drag or keys to roll • Tap or SPACE to jump", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 160), 16, bernGreen);
+            drawTextScreen("Collect RED seeds for score and boost", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 180), 16, bernGreen);
+            drawTextScreen("Collect YELLOW and BLUE seeds for time", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 200), 16, bernGreen);
         }
-        drawTextScreen("Drag or keys to roll • Tap or SPACE to jump", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 160), 16, WHITE);
-        drawTextScreen("Collect RED seeds for score and boost", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 180), 16, bernGreen);
-        drawTextScreen("Collect YELLOW and BLUE seeds for time", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 200), 16, bernGreen);
 
         timer.unset();
     }
