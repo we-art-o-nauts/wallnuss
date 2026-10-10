@@ -8,20 +8,34 @@ const lColor = hsl(0, 0.9, 0.5);
 
 let walnut, city, score, damage, objects, timer;
 let bounce = vec2();
+let pointer;
+
+const pointerMaxRadius = 120;
+const pointerTapDistance = 20;
+const pointerTapTime = .35;
 
 const startTime = 10;
 const startSize = 60;
 const startObjects = 30;
+const gameOverFreeze = 2;
 
 let walnutTile;
+let gameOverTime = 0;
 
 async function gameInit()
 {
     walnutTile = loadSprite('walnut.png');
     await spritesReady();
+    resetGame();
+}
+
+function resetGame()
+{
     score = 0;
     damage = 1;
     timer = new Timer(startTime);
+    gameOverTime = 0;
+    bounce = vec2();
     cameraScale = 1;
     cameraPos = vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2);
 
@@ -33,9 +47,9 @@ async function gameInit()
         angle: 0
     };
     city = vec2(0, 0);
+    pointer = { down: false, origin: vec2(), moved: 0, startTime: 0 };
     objects = [];
     for (let i = 0; i < startObjects; i++) spawnObject(i < 25 ? 1 : i < 29 ? 2 : 3);
-    console.log('after spawn:', objects.length, 'first obj:', objects[0] ? objects[0].pos : 'none');
 }
 
 function spawnObject(t = null)
@@ -58,17 +72,43 @@ function spawnObject(t = null)
 function gameUpdate()
 {
   if (!timer.active()) {
-    if (keyIsDown('Enter')) {
-      // TODO: proper reset of game
-      location.reload();
+    // Freeze the game for a moment so the result can be read before restarting
+    if (!gameOverTime) gameOverTime = time;
+    if (time - gameOverTime >= gameOverFreeze &&
+        (keyWasPressed('Enter') || mouseWasPressed(0))) {
+      resetGame();
     }
       return;
     }
     const w = mainCanvasSize.x, h = mainCanvasSize.y;
+
+    // Drag anywhere to steer, tap to jump (works with mouse, touch and pen)
+    if (mouseWasPressed(0)) {
+        pointer.down = true;
+        pointer.origin = mousePosScreen.copy();
+        pointer.moved = 0;
+        pointer.startTime = time;
+    } else if (mouseIsDown(0) && pointer.down) {
+        pointer.moved = max(pointer.moved, pointer.origin.distance(mousePosScreen));
+    }
+    let tap = false;
+    if (mouseWasReleased(0) && pointer.down) {
+        tap = pointer.moved < pointerTapDistance && time - pointer.startTime < pointerTapTime;
+        pointer.down = false;
+    }
+
+    // Virtual joystick from the drag, blended with keyboard input
     const move = keyDirection();
-    let moveVec = vec2(move.x, move.y).scale(4 + (damage * 0.5));
+    let input = vec2(move.x, move.y);
+    if (mouseIsDown(0) && pointer.down) {
+        const drag = mousePosScreen.subtract(pointer.origin);
+        const len = drag.length();
+        if (len > 0) input = input.add(drag.scale(min(len, pointerMaxRadius) / pointerMaxRadius / len));
+    }
+    if (input.length() > 1) input = input.normalize();
+    let moveVec = input.scale(4 + (damage * 0.5));
     walnut.speed = walnut.speed.add(moveVec).scale(.92);
-    if (keyWasPressed('Space') && damage > 0) {
+    if ((keyWasPressed('Space') || tap) && damage > 0) {
         damage -= 1;
         walnut.speed = walnut.speed.add(walnut.speed.normalize().scale(25));
         moveVec = moveVec.add(walnut.speed.normalize().scale(50));
@@ -197,10 +237,19 @@ function gameRender()
         drawTextScreen("" + score + " points", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2), 58, WHITE, 4);
         drawTextScreen((score < 50 ? "You are a tiny seed, keep rolling" : (score < 100 ? "You grew stronger" : "Well done, master")), vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 60), 22, bernYellow, 3);
 
-        drawTextScreen("ENTER to try again", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 120), 16, WHITE, 3);
-        drawTextScreen("Arrow keys to roll • SPACE to boost", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 140), 16, WHITE);
-        drawTextScreen("Collect RED seeds for score and boost", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 160), 16, bernGreen);
-        drawTextScreen("Collect YELLOW and BLUE seeds for time", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 180), 16, bernGreen);
+        const frozen = time - gameOverTime < gameOverFreeze;
+        if (frozen)
+        {
+            const countdown = Math.ceil(gameOverFreeze - (time - gameOverTime));
+            drawTextScreen("Get ready... " + countdown, vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 120), 16, WHITE, 3);
+        }
+        else
+        {
+            drawTextScreen("ENTER or TAP to try again", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 120), 16, WHITE, 3);
+        }
+        drawTextScreen("Drag or keys to roll • Tap or SPACE to jump", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 160), 16, WHITE);
+        drawTextScreen("Collect RED seeds for score and boost", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 180), 16, bernGreen);
+        drawTextScreen("Collect YELLOW and BLUE seeds for time", vec2(mainCanvasSize.x / 2, mainCanvasSize.y / 2 + 200), 16, bernGreen);
 
         timer.unset();
     }
